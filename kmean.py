@@ -1,21 +1,14 @@
 import math
+import sys
 
 
 def k_means(K, input_data, iter=200):
     """
-    k_mean clustering algorithm
+       k_mean clustering algorithm
     """
     # 1: Initialize centroids as first k datapoints: µk = xk, ∀k ∈ K
     data_points = read_data(input_data)
     N = len(data_points)
-    max_iter = 1000
-    if K < 1 or K > N or not isinstance(K, int):
-        print("Invalid number of clusters!")
-        return
-    if iter < 1 or iter > max_iter or not isinstance(iter, int):
-        print("Invalid maximum iteration!")
-        return
-
     epsilon = 0.01
     prev_centroids = data_points[:K]
     X = data_points
@@ -47,7 +40,7 @@ def k_means(K, input_data, iter=200):
 
 def euclidean_distance(p, q):
     """
-    calculate euclidean distance
+       calculate euclidean distance
     """
     squared_sum = 0
     for i in range(len(p)):
@@ -58,14 +51,50 @@ def euclidean_distance(p, q):
 
 def read_data(file_name):
     """
-    read data from file
+       read data from file
     """
     data = []
-    with open(file_name, 'r') as file:
-        for line in file:
-            data.append([float(x) for x in line.split(",")])
+    try:
+        with open(file_name, 'r') as file:
+            for line in file:
+                data.append([float(x) for x in line.split(",")])
+    except FileNotFoundError:
+        print("An Error Has Occured")
+        sys.exit(1)
+    except Exception as e:
+        print("An Error Has Occured")
+        sys.exit(1)
     return data
 
 
-path = "/Users/noy/Desktop/input_1.txt"
-k_means(3, path, 600)
+if __name__ == "__main__":
+    try:
+        k = int(sys.argv[1])
+        if len(sys.argv) == 4:
+            input_data = sys.argv[3]
+        else:
+            input_data = sys.argv[2]
+        data_points = read_data(input_data)
+        N = len(data_points)
+        assert 1 < k and k < N
+    except:
+        print("Invalid number of clusters!")
+        sys.exit(1)
+
+    try:
+        if len(sys.argv) == 4:
+            iter = int(sys.argv[2])
+            assert 1 < iter and iter < 1000
+        else:
+            iter = 200
+    except:
+        print("Invalid maximum iteration!")
+        sys.exit(1)
+
+    try:
+        k_means(k, input_data, iter)
+    except:
+        print("An Error Has Occured")
+        sys.exit(1)
+
+    sys.exit(0)
