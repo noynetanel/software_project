@@ -8,16 +8,36 @@ int Rows;
 int Cols;
 double *Num_Vectors_In_Cluster;
 double **Sum_Vectors_In_Cluster;
-struct cord
+
+typedef struct cord
 {
     double value;
     struct cord *next;
-};
-struct vector
+}Cord;
+typedef struct vector
 {
     struct vector *next;
     struct cord *cords;
-};
+}Vector;
+
+typedef Cord* cord_List;
+typedef Vector* vec_List;
+
+void delete_Cord_List(cord_List head){
+    if(head != NULL){
+        delete_Cord_List(head->next);
+        free(head);
+    }
+}
+
+void delete_Vec_list(vec_List head){
+    if(head != NULL){
+        delete_Vec_list(head->next);
+        delete_Cord_List((Cord*)head->cords);
+        free(head);
+    }
+}
+
 
 double euclidean_distance(double *p, double *q)
 {   int i;
@@ -38,10 +58,9 @@ void print_2d_array(double **array, int rows, int cols) {
     }
 }
 double **Read_Data(void)
-{  
-    
-    struct vector *head_vec, *curr_vec;
-    struct cord *head_cord, *curr_cord;
+{
+    struct vector *head_vec=NULL, *curr_vec=NULL;
+    struct cord *head_cord=NULL, *curr_cord=NULL;
     int i, j, rows = 0, cols=0;
     double n;
     char c;
@@ -51,7 +70,7 @@ double **Read_Data(void)
     file=stdin;
 
 
-    head_cord = malloc(sizeof(struct cord));
+    head_cord = calloc(1, sizeof(struct cord));
   
     if (head_cord == NULL) {
         printf("An Error Has Occurred\n");
@@ -62,7 +81,7 @@ double **Read_Data(void)
     curr_cord = head_cord;
     curr_cord->next = NULL;
 
-    head_vec = malloc(sizeof(struct vector));
+    head_vec = calloc(1, sizeof(struct vector));
     if (head_vec == NULL) {
         printf("An Error Has Occurred\n");
         exit(1);
@@ -78,14 +97,14 @@ double **Read_Data(void)
         curr_cord->value = n;
         if (c == '\n') {
             curr_vec->cords = head_cord;
-            curr_vec->next = malloc(sizeof(struct vector));
+            curr_vec->next = calloc(1, sizeof(struct vector));
                if (curr_vec->next == NULL) {
                 printf("An Error Has Occurred\n");
                 exit(1);
             }
             curr_vec = curr_vec->next;
             curr_vec->next = NULL;
-            head_cord = malloc(sizeof(struct cord));
+            head_cord = calloc(1, sizeof(struct cord));
             if (head_cord == NULL) {
                 printf("An Error Has Occurred\n");
                 exit(1);
@@ -94,7 +113,7 @@ double **Read_Data(void)
             curr_cord->next = NULL;
             rows++; 
         } else {
-            curr_cord->next = malloc(sizeof(struct cord));
+            curr_cord->next = calloc(1, sizeof(struct cord));
             if (curr_cord->next == NULL) {
                 printf("An Error Has Occurred\n");
                 exit(1);
@@ -112,8 +131,8 @@ double **Read_Data(void)
      printf("Invalid number of clusters!\n");
 		exit(1);
     }
-    mem=(double *)malloc(Rows*Cols*sizeof(double));
-    data=(double **)malloc(Rows*sizeof(double *));
+    mem = (double *)calloc(Rows * Cols, sizeof(double));
+    data = (double **)calloc(Rows, sizeof(double *));
         if (data == NULL) {
         printf("An Error Has Occurred\n");
         exit(1);
@@ -121,7 +140,6 @@ double **Read_Data(void)
     
     for (i = 0; i < rows; i++) {
         data[i] = mem+cols*i;
-
     }
 
     curr_vec = head_vec;
@@ -133,9 +151,9 @@ double **Read_Data(void)
         }
         curr_vec = curr_vec->next;
     }
-
+    delete_Vec_list((Vector*)head_vec);
+    free(head_cord);
     return data;
-
 }
 
 double **copy_2d_array(double **array, int rows, int cols) {
@@ -173,38 +191,34 @@ int index_of_min(double *array, int size) {
 
 int kmeans(int k, int iter)
 {
-    int counter =0;
     double epsilon= 0.001;
-    double *mem1=(double *)malloc(k*Cols*sizeof(double));
-     double *mem2=(double *)malloc(k*Cols*sizeof(double));
     double ** data_points = Read_Data();
     double **prev_centroids = (double **)malloc(k * sizeof(double *));
     double **new_centroids = (double **)malloc(k * sizeof(double *));
     int min_index_cluster;
     double* vector;
     int *sort_vectors_via_cluster = (int *)calloc(Rows, sizeof(int));
-    double *mem_sum_vec=(double *)malloc(k*Cols*sizeof(double));
+    double *mem_sum_vec = (double *)calloc(k * Cols, sizeof(double));
     int i,c,j,p,m,g,r,h;
     double maxim;
     double dist;
-    double *distances=(double *)malloc(sizeof(double)*k);
+    double *distances = (double *)calloc(k, sizeof(double));
     Num_Vectors_In_Cluster= (double *)calloc(k, sizeof(double));
-    Sum_Vectors_In_Cluster=(double **)malloc(k * sizeof(double *));
+    Sum_Vectors_In_Cluster = (double **)calloc(k, sizeof(double *));
     for (i = 0; i < k; i++) {
         Sum_Vectors_In_Cluster[i] = mem_sum_vec+Cols*i;
-         }
+    }
 
         
     if (prev_centroids == NULL || new_centroids == NULL || sort_vectors_via_cluster == NULL) {
         
-        return -1;
+        return 1;
     }
 
 
     for (i = 0; i < k; i++) {
-        prev_centroids[i] = mem1+Cols*i;
-        new_centroids[i]=mem2+Cols*i;
-
+        prev_centroids[i] = (double *) malloc(Cols*sizeof(double));
+        new_centroids[i]=(double *) malloc(Cols*sizeof(double));
     }
 
     for ( i = 0; i <k; i++)
@@ -220,7 +234,6 @@ int kmeans(int k, int iter)
     for (c=0; c<iter; c++)
     {
         maxim=0;
-        counter +=1;
         for(r=0; r<k; r++)
         {
             for(i=0; i<Cols; i++)
@@ -233,7 +246,7 @@ int kmeans(int k, int iter)
 
 
         if (Num_Vectors_In_Cluster == NULL || Sum_Vectors_In_Cluster == NULL) {
-            return -1;
+            return 1;
         }
 
         for (i=0; i<Rows; i++)
@@ -261,7 +274,7 @@ int kmeans(int k, int iter)
             for(m=0; m<Cols; m++)
             {
             
-            new_centroids[g][m]=(Sum_Vectors_In_Cluster[g][m])/Num_Vectors_In_Cluster[g];
+            new_centroids[g][m]=(float)(Sum_Vectors_In_Cluster[g][m])/Num_Vectors_In_Cluster[g];
             }
              
         }
@@ -275,47 +288,51 @@ int kmeans(int k, int iter)
 
             } 
         }
-        
+        for(i=0;i<k;i++){
+            free(prev_centroids[i]);
+        }
+        free(prev_centroids);
         prev_centroids=copy_2d_array(new_centroids,k,Cols);
        
         if (maxim < epsilon)
         {
-        for (i=0; i<k; i++)
-        {
-                for(j=0; j<Cols-1; j++)
-                    {
-                    printf("%.4f ,",new_centroids[i][j]);
-                    }
-            printf("%.4f ",new_centroids[i][Cols-1]);
-            printf("\n");
-
-        }
-        printf("%d",counter);
-        
         goto finish;
         }      
     }
+    finish:
     for (i=0; i<k; i++)
     {
         for(j=0; j<Cols-1; j++)
         {
-            printf("%.4f ,",new_centroids[i][j]);
+            printf("%.4f,",new_centroids[i][j]);
         }
-            printf("%.4f ",new_centroids[i][Cols-1]);
+            printf("%.4f",new_centroids[i][Cols-1]);
         printf("\n");
 
     }
-    finish:
-    printf("%d",counter);
-    return 0;
 
+    
+    free(data_points[0]);
+    free(data_points);
+    free(mem_sum_vec);
+    free(Sum_Vectors_In_Cluster);
+    free(sort_vectors_via_cluster);
+    free(distances);
+    free(Num_Vectors_In_Cluster);
+    for(i=0;i<k;i++){
+        free(new_centroids[i]);
+    }
+    free(new_centroids);
+    for(i=0;i<k;i++){
+        free(prev_centroids[i]);
+    }
+    free(prev_centroids);
+    return 0;
 }
 
 int main(int argc, char **argv)
 {   
-    
-    
-        if(argc<2)
+    if(argc<2)
     {
         printf( "An Error Has Occurred");
         return 1;
@@ -337,11 +354,9 @@ int main(int argc, char **argv)
             }
     }
 
-    if(kmeans(K,iter)==-1)
+    if(kmeans(K,iter)==1)
     {
         printf("An Error Has Occurred");
     }
-    printf("success");
-
 	return 0;
 }
